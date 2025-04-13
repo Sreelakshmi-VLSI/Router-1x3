@@ -1,0 +1,121 @@
+class router_scoreboard extends uvm_scoreboard;
+
+`uvm_component_utils(router_scoreboard)
+
+
+source_write_xtn src_xtn;
+dest_read_xtn dest_xtn;
+//router_env envh;
+env_config env_cfg;
+
+uvm_tlm_analysis_fifo #(source_write_xtn) src_fifo[];
+uvm_tlm_analysis_fifo#(dest_read_xtn) dest_fifo[];
+
+bit[1:0] addr;
+
+
+
+extern function new(string name,uvm_component parent);
+extern function void build_phase(uvm_phase phase);
+extern task run_phase(uvm_phase phase);
+extern task compare(source_write_xtn src_xtn, dest_read_xtn dest_xtn);
+covergroup src_cvr;
+
+        ADDR:coverpoint src_xtn.header[1:0]{
+                bins first={2'b00};
+                bins second={2'b01};
+                bins third={2'b10};}
+
+        PY_LGTH:coverpoint src_xtn.header[7:2]{
+                bins small_packet={[1:20]};
+                bins medium_packet={[20:40]};
+                bins large_packet={[40:63]};}
+
+        ERROR:coverpoint src_xtn.err{
+                bins no_err={0};
+                bins err={1};}
+        cross ADDR,PY_LGTH,ERROR;
+endgroup
+
+covergroup dest_cvr;
+ADDR:coverpoint dest_xtn.header[1:0]{
+                bins first={2'b00};
+                bins second={2'b01};
+                bins third={2'b10};}
+
+        PY_LGTH:coverpoint dest_xtn.header[7:2]{
+                bins small_packet={[1:20]};
+                bins medium_packet={[20:40]};
+                bins large_packet={[40:63]};}
+        cross ADDR,PY_LGTH;
+//      ERROR:coverpoint dest_xtn.err{
+//              bins no_err=0;
+//              bins err=1;};
+endgroup
+
+
+
+
+endclass
+
+function router_scoreboard::new(string name,uvm_component parent);
+super.new(name,parent);
+src_cvr=new();
+dest_cvr=new();
+endfunction
+
+function void router_scoreboard::build_phase(uvm_phase phase);
+super.build_phase(phase);
+        //if(!uvm_config_db#(bit[1:0])::get(this,"","addr",addr))
+                //`uvm_fatal("u","o");
+        if(!uvm_config_db#(env_config)::get(this,"","env_config",env_cfg))
+                `uvm_fatal("o","u");
+        src_fifo=new[env_cfg.no_of_src_agents];
+        dest_fifo=new[env_cfg.no_of_dest_agents];
+ foreach(src_fifo[i])
+                src_fifo[i]=new($sformatf("src_fifo[%0d]",i),this);
+        foreach(dest_fifo[i])
+                dest_fifo[i]=new($sformatf("dest_fifo[%0d]",i),this);
+
+
+endfunction
+
+task router_scoreboard::run_phase(uvm_phase phase);
+forever begin
+        fork
+        begin
+                src_fifo[0].get(src_xtn);
+                $display("source_sb");
+                src_xtn.print();
+                src_cvr.sample();
+        end
+        begin
+                if(!uvm_config_db#(bit[1:0])::get(this,"","addr",addr))
+                `uvm_fatal("u","o");
+
+                dest_fifo[addr].get(dest_xtn);
+                $display("dest_sb");
+                dest_xtn.print();
+                dest_cvr.sample();
+        end
+compare(src_xtn,dest_xtn);
+
+join
+end
+endtask
+
+task router_scoreboard::compare(source_write_xtn src_xtn, dest_read_xtn dest_xtn);
+
+src_xtn=source_write_xtn::type_id::create("src_xtn");
+dest_xtn=dest_read_xtn::type_id::create("dest_xtn");
+
+if(src_xtn.header==dest_xtn.header)
+$display("Header comparison successfull",src_xtn.header);
+else
+$display("Header comparison failed");
+
+if(src_xtn.payload==dest_xtn.payload)
+$display("Payload comparison successfull");
+else
+$display("Payload comparison failed");
+endtask

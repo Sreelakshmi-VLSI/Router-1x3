@@ -1,0 +1,70 @@
+class dest_rd_drv extends uvm_driver#(dest_read_xtn);
+
+        `uvm_component_utils(dest_rd_drv)
+                dest_config dest_cfg;
+                virtual router_if.DDRV_MP vif;
+
+        extern function new(string name = "dest_rd_drv",uvm_component parent);
+        extern function void build_phase(uvm_phase phase);
+        extern function void connect_phase(uvm_phase phase);
+        extern task run_phase(uvm_phase phase);
+        extern task send_to_dut(dest_read_xtn req);
+
+endclass
+
+function dest_rd_drv::new(string name="dest_rd_drv",uvm_component parent);
+        super.new(name,parent);
+endfunction:new
+
+      function void dest_rd_drv::build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        if(!uvm_config_db #(dest_config)::get(this,"","dest_config",dest_cfg))
+                        `uvm_fatal(get_type_name(),"error");
+
+        endfunction:build_phase
+
+     function void dest_rd_drv::connect_phase(uvm_phase phase);
+        super.connect_phase(phase);
+        vif=dest_cfg.vif;
+        endfunction
+task dest_rd_drv::run_phase(uvm_phase phase);
+forever
+begin
+seq_item_port.get_next_item(req);
+send_to_dut(req);
+//req.print();
+seq_item_port.item_done();
+end
+endtask
+task dest_rd_drv::run_phase(uvm_phase phase);
+forever
+begin
+seq_item_port.get_next_item(req);
+send_to_dut(req);
+//req.print();
+seq_item_port.item_done();
+end
+endtask
+
+task dest_rd_drv::send_to_dut(dest_read_xtn req);
+while(vif.dest_drv_cb.vld_out!==1)
+//$display("llll");
+
+@(vif.dest_drv_cb);
+repeat(req.delay)
+@(vif.dest_drv_cb);
+vif.dest_drv_cb.read_enb<=1'b1;
+@(vif.dest_drv_cb);
+while(vif.dest_drv_cb.vld_out!==0)
+@(vif.dest_drv_cb);
+//req.print;
+
+@(vif.dest_drv_cb);
+vif.dest_drv_cb.read_enb<=1'b0;
+@(vif.dest_drv_cb);
+
+
+`uvm_info("ROUTER_rd_DRIVER",$sformatf("printing from driver \n %s", req.sprint()),UVM_LOW)
+
+
+endtask

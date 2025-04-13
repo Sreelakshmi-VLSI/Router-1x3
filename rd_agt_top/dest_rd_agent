@@ -1,0 +1,45 @@
+class dest_rd_agent extends uvm_agent;
+
+   // Factory Registration
+                `uvm_component_utils(dest_rd_agent)
+
+
+        dest_rd_drv drvh;
+        dest_rd_mon monh;
+        dest_rd_sequencer seqrh;
+        dest_config dest_cfg;
+
+
+        //------------------------------------------
+        // METHODS
+        //------------------------------------------
+
+        //Add all the UVM phases
+        extern function new(string name = "dest_rd_agent",uvm_component parent);
+        extern function void build_phase(uvm_phase phase);
+        extern  function void connect_phase(uvm_phase phase);
+
+endclass
+
+
+//-----------------  constructor new method  -------------------//
+
+function dest_rd_agent::new(string name="dest_rd_agent",uvm_component parent);
+        super.new(name,parent);
+endfunction:new
+ function void dest_rd_agent::build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        //`uvm_info("DEST_AGENT","This is Build Phase ", UVM_LOW)
+                                monh=dest_rd_mon::type_id::create("monh",this);
+                if(!uvm_config_db #(dest_config)::get(this,"","dest_config",dest_cfg))
+                        `uvm_fatal(get_type_name(),"error");
+
+                seqrh=dest_rd_sequencer::type_id::create("seqrh",this);
+                drvh=dest_rd_drv::type_id::create("drvh",this);
+
+        endfunction:build_phase
+
+        function void dest_rd_agent::connect_phase(uvm_phase phase);
+        drvh.seq_item_port.connect(seqrh.seq_item_export);
+        endfunction
+

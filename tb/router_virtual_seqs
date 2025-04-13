@@ -1,0 +1,151 @@
+class router_virtual_seqs extends uvm_sequence #(uvm_sequence_item) ;
+
+`uvm_object_utils(router_virtual_seqs)
+
+`uvm_object_utils(router_virtual_seqs)
+
+        source_wr_sequencer src_seqrh[];
+        dest_rd_sequencer dest_seqrh[];
+        router_virtual_sequencer v_seqrh;
+
+        small_packet a_seq;
+        medium_packet m_seq;
+        large_packet l_seq;
+        error_packet e_seq;
+
+        normal_sequence n_seq;
+        soft_sequence s_seq;
+
+        env_config  env_cfg;
+
+//      router_virtual_sequencer v_seqrh;
+        bit [1:0] addr;
+
+
+        extern function new(string name = "router_virtual_seqs");
+        extern task body();
+//      extern function void build_phase(uvm_phase phase);
+        endclass
+
+function router_virtual_seqs::new(string name="router_virtual_seqs");
+                super.new(name);
+        endfunction
+
+task router_virtual_seqs::body();
+
+        super.body();
+        if(!uvm_config_db#(env_config)::get(null,get_full_name(),"env_config",env_cfg))
+        `uvm_fatal(get_type_name(),"error")
+                src_seqrh=new[env_cfg.no_of_src_agents];
+                dest_seqrh=new[env_cfg.no_of_dest_agents];
+
+        assert($cast(v_seqrh,m_sequencer))
+                else
+                        begin
+                                `uvm_error("BODY","error");
+                        end
+
+        foreach(src_seqrh[i])
+                src_seqrh[i]=v_seqrh.src_seqrh[i];
+        foreach(dest_seqrh[i])
+                dest_seqrh[i]=v_seqrh.dest_seqrh[i];
+
+endtask
+
+class small_vseqs extends router_virtual_seqs;
+`uvm_object_utils(small_vseqs)
+
+
+        extern function new(string name="small_vseqs");
+        extern task body();
+endclass
+        function small_vseqs::new(string name="small_vseqs");
+                super.new(name);
+        endfunction
+        task small_vseqs::body();
+        super.body();
+        a_seq=small_packet::type_id::create("a_seq");
+        n_seq=normal_sequence::type_id::create("n_seq");
+        //s_seq=soft_sequence::type_id::create("s_seq");
+        if(!uvm_config_db #(bit[1:0])::get(null,get_full_name(),"addr",addr))
+                `uvm_fatal("get_full_name","error");
+        fork
+                a_seq.start(src_seqrh[0]);
+                n_seq.start(dest_seqrh[addr]);
+                //s_seq.start(dest_seqrh[addr]);
+        join
+endtask
+
+class medium_vseqs extends router_virtual_seqs;
+`uvm_object_utils(medium_vseqs)
+
+
+        extern function new(string name="medium_vseqs");
+        extern task body();
+endclass
+        function medium_vseqs::new(string name="medium_vseqs");
+                super.new(name);
+        endfunction
+        task medium_vseqs::body();
+        super.body();
+        m_seq=medium_packet::type_id::create("m_seq");
+        n_seq=normal_sequence::type_id::create("n_seq");
+        //s_seq=soft_sequence::type_id::create("s_seq");
+        if(!uvm_config_db #(bit[1:0])::get(null,get_full_name(),"addr",addr))
+                `uvm_fatal("get_full_name","error");
+        fork
+                m_seq.start(src_seqrh[0]);
+                n_seq.start(dest_seqrh[addr]);
+        //      s_seq.start(dest_seqrh[addr]);
+        join
+endtask
+
+
+
+class large_vseqs extends router_virtual_seqs;
+`uvm_object_utils(large_vseqs)
+
+
+        extern function new(string name="large_vseqs");
+        extern task body();
+endclass
+        function large_vseqs::new(string name="large_vseqs");
+                super.new(name);
+        endfunction
+        task large_vseqs::body();
+        super.body();
+        l_seq=large_packet::type_id::create("l_seq");
+        //n_seq=normal_sequence::type_id::create("n_seq");
+        s_seq=soft_sequence::type_id::create("s_seq");
+        if(!uvm_config_db #(bit[1:0])::get(null,get_full_name(),"addr",addr))
+                `uvm_fatal("get_full_name","error");
+        fork
+                l_seq.start(src_seqrh[0]);
+                //n_seq.start(dest_seqrh[addr]);
+                s_seq.start(dest_seqrh[addr]);
+        join
+endtask
+
+class error_vseqs extends router_virtual_seqs;
+`uvm_object_utils(error_vseqs)
+
+
+        extern function new(string name="error_vseqs");
+        extern task body();
+endclass
+        function error_vseqs::new(string name="error_vseqs");
+                super.new(name);
+        endfunction
+        task error_vseqs::body();
+        super.body();
+        e_seq=error_packet::type_id::create("e_seq");
+        n_seq=normal_sequence::type_id::create("n_seq");
+        //s_seq=soft_sequence::type_id::create("s_seq");
+        if(!uvm_config_db #(bit[1:0])::get(null,get_full_name(),"addr",addr))
+                `uvm_fatal("get_full_name","error");
+        fork
+                e_seq.start(src_seqrh[0]);
+                n_seq.start(dest_seqrh[addr]);
+                //s_seq.start(dest_seqrh[addr]);
+        join
+endtask

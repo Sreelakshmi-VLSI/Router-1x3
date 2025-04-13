@@ -1,0 +1,59 @@
+// Extend ram_env from uvm_env
+class router_env extends uvm_env;
+
+   // Factory Registration
+
+
+        // Declare the ram_wr_agent handle
+                `uvm_component_utils(router_env)
+        source_top src_top;
+
+        dest_top  dest_tp;
+        //source_wr_sequencer src_seqrh[];
+        //dest_rd_sequencer dest_seqrh[];
+        router_virtual_sequencer v_seqrh;
+
+        router_scoreboard sb;
+
+        env_config env_cfg;
+
+extern function new(string name = "router_env", uvm_component parent);
+extern function void build_phase(uvm_phase phase);
+extern function void connect_phase(uvm_phase phase);
+
+endclass
+
+function router_env::new(string name = "router_env", uvm_component parent);
+                super.new(name,parent);
+        endfunction
+function void router_env::build_phase(uvm_phase phase);
+
+if(!uvm_config_db #(env_config)::get(this,"","env_config",env_cfg))
+                `uvm_fatal("CONFIG","cannot get() m_cfg from uvm_config_db. Have you set() it?")
+  //src_seqrh=new[env_cfg.no_of_src_agents];
+        //dest_seqrh=new[env_cfg.no_of_dest_agents];
+
+    src_top=source_top::type_id::create("src_top",this);
+        dest_tp=dest_top::type_id::create("dest_tp",this);
+        v_seqrh=router_virtual_sequencer::type_id::create("v_seqrh",this);
+        sb=router_scoreboard::type_id::create("sb",this);
+        env_cfg=env_config::type_id::create("env_cfg",this);
+endfunction
+  function void router_env::connect_phase(uvm_phase phase);
+        //for(int i=0;i<env_cfg.no_of_src_agents;i++)
+                foreach(v_seqrh.src_seqrh[i])
+                v_seqrh.src_seqrh[i]=src_top.src_agnth[i].seqrh;
+        //for(int i=0;i<env_cfg.no_of_dest_agents;i++)
+                        foreach(v_seqrh.dest_seqrh[i])
+
+                v_seqrh.dest_seqrh[i]=dest_tp.dest_agnth[i].seqrh;
+
+
+        foreach(src_top.src_agnth[i])
+                src_top.src_agnth[i].monh.monitor_port.connect(sb.src_fifo[i].analysis_export);
+        foreach(dest_tp.dest_agnth[i])
+                dest_tp.dest_agnth[i].monh.monitor_port.connect(sb.dest_fifo[i].analysis_export);
+
+
+endfunction
+

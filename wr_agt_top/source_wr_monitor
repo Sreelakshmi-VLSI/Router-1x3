@@ -1,0 +1,83 @@
+class source_wr_monitor extends uvm_monitor;
+
+  // Factory Registration
+        `uvm_component_utils(source_wr_monitor)
+
+  // Declare virtual interface handle with WMON_MP as modport
+   //   virtual router_if.WMON_MP vif;
+        virtual router_if.SMON_MP vif;
+
+  // Declare the ram_wr_agent_config handle as "m_cfg"
+        source_config src_cfg;
+        source_write_xtn xtn;
+
+  // Analysis TLM port to connect the monitor to the scoreboard for lab09
+        uvm_analysis_port #(source_write_xtn) monitor_port;
+
+
+extern function new(string name = "source_wr_monitor", uvm_component parent);
+extern function void build_phase(uvm_phase phase);
+extern function void connect_phase(uvm_phase phase);
+extern task run_phase(uvm_phase phase);
+extern task collect_data();
+endclass
+//-----------------  constructor new method  -------------------//
+        function source_wr_monitor::new(string name = "source_wr_monitor", uvm_component parent);
+                super.new(name,parent);
+                // create object for handle monitor_port using new
+                monitor_port = new("monitor_port", this);
+
+        endfunction
+
+//-----------------  build() phase method  -------------------//
+        function void source_wr_monitor::build_phase(uvm_phase phase);
+        // call super.build_phase(phase);
+                super.build_phase(phase);
+                if(!uvm_config_db #(source_config)::get(this,"","source_config",src_cfg))
+                `uvm_fatal(get_type_name(),"error");
+
+                endfunction:build_phase
+
+function void source_wr_monitor::connect_phase(uvm_phase phase);
+vif=src_cfg.vif;
+endfunction
+task source_wr_monitor::run_phase(uvm_phase phase);
+forever
+collect_data();
+//xtn.print();
+endtask
+task source_wr_monitor::collect_data();
+
+
+xtn=source_write_xtn::type_id::create("xtn");
+@(vif.src_mon_cb);
+
+while(vif.src_mon_cb.pkt_valid!==1)
+        @(vif.src_mon_cb);
+while(vif.src_mon_cb.busy!=0)
+@(vif.src_mon_cb);
+xtn.header=vif.src_mon_cb.data_in;
+xtn.payload=new[xtn.header[7:2]];
+@(vif.src_mon_cb);
+for(int i=0;i<xtn.header[7:2];i++)
+begin
+while(vif.src_mon_cb.busy!==0)
+@(vif.src_mon_cb);
+xtn.payload[i]=vif.src_mon_cb.data_in;
+//xtn.print();
+
+@(vif.src_mon_cb);
+end
+
+xtn.parity=vif.src_mon_cb.data_in;
+//xtn.print();
+
+//`uvm_info("ROUTER_WR_mon",$sformatf("printing from monitor \n %s",xtn.sprint()),UVM_LOW)
+
+repeat(2)
+@(vif.src_mon_cb);
+xtn.err=vif.src_mon_cb.err;
+
+`uvm_info("ROUTER_WR_mon",$sformatf("printing from monitor \n %s",xtn.sprint()),UVM_LOW)
+monitor_port.write(xtn);
+endtask

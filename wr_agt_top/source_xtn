@@ -1,0 +1,32 @@
+class source_write_xtn extends uvm_sequence_item; 
+`uvm_object_utils(source_write_xtn) 
+rand bit [7:0]header,payload[]; 
+bit[7:0]parity; 
+bit pkt_valid,err,busy; 
+constraint c1{header[1:0]!=2'b11;} 
+constraint c2{header[7:2]!=6'b000000;} 
+constraint c3{payload.size==header[7:2];} 
+extern function new(string name = "source_write_xtn"); 
+extern function void do_print(uvm_printer printer); 
+extern function void post_randomize(); 
+endclass 
+function source_write_xtn::new(string name = "source_write_xtn"); 
+super.new(name); 
+endfunction:new 
+function void source_write_xtn::do_print(uvm_printer printer); 
+super.do_print(printer); 
+printer.print_field("Header",this.header,8,UVM_DEC); 
+foreach(payload[i]) 
+begin 
+printer.print_field($sformatf("payload[%0d]",i),this.payload[i],8,UVM_DEC); 
+end 
+printer.print_field("parity",this.parity,8,UVM_DEC); 
+printer.print_field("pkt_valid",this.pkt_valid,8,UVM_DEC); 
+printer.print_field("err",this.err,8,UVM_DEC); 
+printer.print_field("busy",this.busy,8,UVM_DEC); 
+endfunction 
+function void source_write_xtn::post_randomize(); 
+parity=header; 
+foreach(payload[i]) 
+parity=parity^payload[i]; 
+endfunction

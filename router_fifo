@@ -1,0 +1,122 @@
+module router_fifo(input clock,resetn,write_enb,soft_reset,read_enb,lfd_state,input [7:0] data_in,output reg [7:0] dout,output reg  full,output reg empty);
+
+reg [4:0] rd_ptr;
+reg [4:0] wr_ptr;
+reg [6:0] fifo_counter;
+reg lfd_state_s;
+reg [8:0] mem [15:0];
+integer i;
+
+
+
+always@(posedge clock)
+begin
+ if(!resetn)
+lfd_state_s<=0;
+else
+lfd_state_s<=lfd_state;
+end
+always@(posedge clock)
+begin
+if(!resetn)
+        fifo_counter<=7'h0;
+        else if(soft_reset)
+        fifo_counter<=7'h0;
+        else if(read_enb && !empty)
+        begin
+        if(mem[rd_ptr[3:0]][8]==1'b1)
+                fifo_counter<=mem[rd_ptr[3:0]][7:2]+7'b1;
+                else if(fifo_counter!=7'h0)
+                fifo_counter<=fifo_counter-1'b1;
+                else
+                fifo_counter<=fifo_counter;
+                end
+                end
+always@(posedge clock)
+begin
+if(!resetn)
+                        dout<=8'h0;
+                        else if(soft_reset)
+                        dout<=8'hz;
+ else if(read_enb && ~empty)
+                        dout<=mem[rd_ptr[3:0]][7:0];
+                        else
+                        dout<=dout;
+                        end
+always@(posedge clock)
+begin
+if(!resetn)
+begin
+wr_ptr<=5'b0;
+                for(i=0;i<16;i=i+1)
+                                mem[i]<=8'h0;
+                                end
+                                else if(soft_reset)
+                                begin
+                                for(i=0;i<16;i=i+1)
+                                mem[i]<=8'h0;
+                                wr_ptr<=5'b0;
+                                end
+                                else if(write_enb && !full)begin
+                                wr_ptr<=wr_ptr+1'b1;
+                                mem[wr_ptr]<={lfd_state_s,data_in};
+                                end
+                                else
+                                mem[wr_ptr]<=mem[wr_ptr];
+                                end
+always@(posedge clock)
+ begin
+ if(!resetn)
+ rd_ptr<=5'h0;
+ else if(soft_reset)
+        rd_ptr<=5'h0;
+        else if(read_enb && !empty)
+        rd_ptr<=rd_ptr+1'b1;
+        else
+        rd_ptr<=rd_ptr;
+        end
+
+
+
+
+
+always@(posedge clock)
+begin
+        if(!resetn)
+        begin
+                full <= 1'b0;
+                end
+        else if(soft_reset)
+                begin
+                full <= 1'b0;
+                end
+
+         else if(wr_ptr== 5'd16 && rd_ptr==5'd0)
+                begin
+                full <= 1'b1;
+                end
+        else
+        begin
+                full <= 1'b0;
+
+        end
+end
+always@(posedge clock)
+begin
+
+        if(!resetn)
+        begin
+                empty <= 1'b0;
+                end
+        else if(rd_ptr==wr_ptr)
+                begin
+                empty <= 1'b1;
+                end
+        else
+        begin
+                empty <= 1'b0;
+
+        end
+end
+
+endmodule

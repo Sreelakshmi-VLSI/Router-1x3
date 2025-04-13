@@ -1,0 +1,37 @@
+ class dest_top extends uvm_env;
+
+   // Factory Registration
+        `uvm_component_utils(dest_top)
+
+   // Create the agent handle
+         dest_rd_agent dest_agnth[];
+         env_config env_cfg;
+
+//      int no_of_agents=3;
+//------------------------------------------
+// METHODS
+//------------------------------------------
+
+// Standard UVM Methods:
+        extern function new(string name = "dest_top" , uvm_component parent);
+        extern function void build_phase(uvm_phase phase);
+          endclass
+//-----------------  constructor new method  -------------------//
+   // Define Constructor new() function
+        function dest_top::new(string name = "dest_top" , uvm_component parent);
+                super.new(name,parent);
+        endfunction
+
+
+//-----------------  build() phase method  -------------------//
+        function void dest_top::build_phase(uvm_phase phase);
+                super.build_phase(phase);
+                        if(!uvm_config_db #(env_config)::get(this,"","env_config",env_cfg))
+                        `uvm_fatal(get_type_name(),"error");
+                dest_agnth=new[env_cfg.no_of_dest_agents];
+                foreach(dest_agnth[i])
+                begin
+                dest_agnth[i]=dest_rd_agent::type_id::create($sformatf("dest_agnth[%0d]",i),this);
+                uvm_config_db #(dest_config)::set(this,$sformatf("dest_agnth[%0d]*",i),"dest_config",env_cfg.dest_cfg[i]);
+                end
+endfunction

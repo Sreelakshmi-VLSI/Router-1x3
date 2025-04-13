@@ -1,0 +1,188 @@
+class router_test extends uvm_test;
+
+`uvm_component_utils(router_test)
+
+source_config src_cfg[];
+dest_config dest_cfg[];
+env_config  env_cfg;
+//router_if vif;
+router_env envh;
+
+int no_of_duts=4;
+//int has_sagnt=1;
+//int has_dagnt=1;
+int no_of_src_agents=1;
+int no_of_dest_agents=3;
+bit [1:0] addr;
+extern function new(string name = "router_test" , uvm_component parent);
+extern function void build_phase(uvm_phase phase);
+extern function void end_of_elaboration_phase(uvm_phase phase);
+//extern function void config_ram();
+endclass
+function router_test::new(string name = "router_test" , uvm_component parent);
+                super.new(name,parent);
+endfunction
+function void router_test::build_phase(uvm_phase phase);
+        env_cfg=env_config::type_id::create("env_cfg",this);
+        env_cfg.src_cfg=new[no_of_src_agents];
+        env_cfg.dest_cfg=new[no_of_dest_agents];
+        src_cfg=new[no_of_src_agents];
+        dest_cfg=new[no_of_dest_agents];
+foreach(src_cfg[i])
+        begin
+                src_cfg[i]=source_config::type_id::create($sformatf("src_cfg[%0d]",i));
+if(!uvm_config_db#(virtual router_if)::get(this,"","in",src_cfg[i].vif))
+`uvm_fatal(get_type_name(),"error0");
+src_cfg[i].is_active=UVM_ACTIVE;
+env_cfg.src_cfg[i]=src_cfg[i];
+end
+foreach(dest_cfg[i])
+        begin
+                dest_cfg[i]=dest_config::type_id::create($sformatf("dest_cfg[%0d]",i));
+if(!uvm_config_db#(virtual router_if)::get(this,"",$sformatf("in%0d",i),dest_cfg[i].vif))
+`uvm_fatal(get_type_name(),"error1");
+dest_cfg[i].is_active=UVM_ACTIVE;
+env_cfg.dest_cfg[i]=dest_cfg[i];
+
+end
+//env_cfg=env_config::type_id::create("env_cfg",this);
+
+
+
+
+env_cfg.no_of_src_agents=no_of_src_agents;
+env_cfg.no_of_dest_agents=no_of_dest_agents;
+
+uvm_config_db#(env_config)::set(this,"*","env_config",env_cfg);
+envh=router_env::type_id::create("envh",this);
+
+endfunction
+ function void router_test::end_of_elaboration_phase(uvm_phase phase);
+uvm_top.print_topology();
+endfunction
+class small_test extends router_test;
+`uvm_component_utils(small_test)
+bit [1:0] addr;
+//small_packet a_seq;
+//normal_sequence n_seq;
+small_vseqs sv_seqs;
+//medium_vseqs mv_seqs;
+//large_vseqs lv_seqs;
+//error_vseqs ev_seqs;
+
+
+extern function new(string name="small_test",uvm_component parent);
+extern function void build_phase(uvm_phase phase);
+extern task run_phase(uvm_phase phase);
+endclass
+
+function small_test::new(string name="small_test",uvm_component parent);
+super.new(name,parent);
+endfunction
+
+function void small_test::build_phase(uvm_phase phase);
+super.build_phase(phase);
+endfunction
+
+task small_test::run_phase(uvm_phase phase);
+//a_seq=small_packet::type_id::create("a_seq");
+//n_seq=normal_sequence::type_id::create("n_seq");
+//addr=2'b01;
+//mv_seqs=medium_vseqs::type_id::create("mv_seqs");
+//lv_seqs=large_vseqs::type_id::create("lv_seqs");
+//ev_seqs=error_vseqs::type_id::create("ev_seqs");
+//repeat(20)
+//begin
+//bit [1:0] addr=$random%3;
+
+//uvm_config_db#(bit[1:0])::set(this,"*","addr",addr);
+phase.raise_objection(this);
+repeat(10) begin
+addr={$random}%3;
+sv_seqs=small_vseqs::type_id::create("sv_seqs");
+uvm_config_db#(bit[1:0])::set(this,"*","addr",addr);
+
+
+//a_seq.start(envh.src_top.src_agnth[0].seqrh);
+//n_seq.start(envh.dest_tp.dest_agnth[addr].seqrh);
+sv_seqs.start(envh.v_seqrh);
+//mv_seqs.start(envh.v_seqrh);
+//lv_seqs.start(envh.v_seqrh);
+//ev_seqs.start(envh.v_seqrh);
+
+
+
+
+end
+
+phase.drop_objection(this);
+//end
+
+
+endtask
+
+class medium_test extends router_test;
+`uvm_component_utils(medium_test)
+bit [1:0] addr;
+//medium_packet m_seq;
+//soft_sequence s_seq;
+medium_vseqs mv_seqs;
+
+
+extern function new(string name="medium_test",uvm_component parent);
+extern function void build_phase(uvm_phase phase);
+
+extern task run_phase(uvm_phase phase);
+endclass
+function medium_test::new(string name="medium_test",uvm_component parent);
+super.new(name,parent);
+endfunction
+function void medium_test::build_phase(uvm_phase phase);
+super.build_phase(phase);
+//uvm_config_db#(bit[1:0])::set(this,"*","addr",addr);
+
+endfunction
+
+
+task medium_test::run_phase(uvm_phase phase);
+//m_seq=medium_packet::type_id::create("m_seq");
+//s_seq=soft_sequence::type_id::create("s_seq");
+//addr=2'b00;
+//mv_seqs=medium_vseqs::type_id::create("mv_seqs");
+phase.raise_objection(this);
+repeat(10) begin
+addr={$random}%3;
+mv_seqs=medium_vseqs::type_id::create("mv_seqs");
+uvm_config_db#(bit[1:0])::set(this,"*","addr",addr);
+
+
+//m_seq.start(envh.src_top.src_agnth[0].seqrh);
+//s_seq.start(envh.dest_tp.dest_agnth[addr].seqrh);
+mv_seqs.start(envh.v_seqrh);
+
+end
+phase.drop_objection(this);
+endtask
+
+
+class large_test extends router_test;
+`uvm_component_utils(large_test)
+bit [1:0] addr;
+//large_packet l_seq;
+//soft_sequence s_seq;
+large_vseqs lv_seqs;
+
+
+extern function new(string name="large_test",uvm_component parent);
+extern function void build_phase(uvm_phase phase);
+
+extern task run_phase(uvm_phase phase);
+endclass
+function large_test::new(string name="large_test",uvm_component parent);
+super.new(name,parent);
+endfunction
+function void large_test::build_phase(uvm_phase phase);
+super.build_phase(phase);
+//uvm_config_db#(bit[1:0])::set(this,"*","addr",addr);
+
+endfunction

@@ -1,0 +1,86 @@
+class dest_rd_mon extends uvm_monitor;
+
+        `uvm_component_utils(dest_rd_mon)
+
+    //  virtual counter_if.WMON_MP vif;
+        virtual router_if.DMON_MP vif;
+  // Declare the ram_wr_agent_config handle as "m_cfg"
+        dest_config dest_cfg;
+        dest_read_xtn xtn;
+
+  // Analysis TLM port to connect the monitor to the scoreboard for lab09
+        uvm_analysis_port #(dest_read_xtn) monitor_port;
+
+
+//------------------------------------------
+// METHODS
+//------------------------------------------
+
+// Standard UVM Methods:
+extern function new(string name = "dest_rd_mon", uvm_component parent);
+extern function void build_phase(uvm_phase phase);
+        extern function void connect_phase(uvm_phase phase);
+extern task run_phase(uvm_phase phase);
+extern task collect_data();
+
+endclass
+//-----------------  constructor new method  -------------------//
+        function dest_rd_mon::new(string name = "dest_rd_mon", uvm_component parent);
+                super.new(name,parent);
+                // create object for handle monitor_port using new
+                monitor_port = new("monitor_port", this);
+
+        endfunction
+
+
+//-----------------  build() phase method  -------------------//
+        function void dest_rd_mon::build_phase(uvm_phase phase);
+        // call super.build_phase(phase);
+          super.build_phase(phase);
+        if(!uvm_config_db #(dest_config)::get(this,"","dest_config",dest_cfg))
+                        `uvm_fatal(get_type_name(),"error");
+
+        endfunction:build_phase
+
+     function void dest_rd_mon::connect_phase(uvm_phase phase);
+        super.connect_phase(phase);
+        vif=dest_cfg.vif;
+        endfunction
+
+task dest_rd_mon::run_phase(uvm_phase phase);
+forever
+begin
+collect_data();
+end
+endtask
+
+task dest_rd_mon::collect_data();
+
+xtn=dest_read_xtn::type_id::create("xtn");
+
+while(vif.dest_mon_cb.read_enb!==1)
+
+@(vif.dest_mon_cb);
+@(vif.dest_mon_cb);
+xtn.header=vif.dest_mon_cb.data_out;
+xtn.payload=new[xtn.header[7:2]];
+
+@(vif.dest_mon_cb);
+foreach(xtn.payload[i])
+begin
+xtn.payload[i]=vif.dest_mon_cb.data_out;
+@(vif.dest_mon_cb);
+//xtn.print;
+//xtn.read_enb=vif.dest_mon_cb.read_enb;
+//xtn.vld_out=vif.dest_mon_cb.vld_out;
+end
+xtn.parity=vif.dest_mon_cb.data_out;
+@(vif.dest_mon_cb);
+
+
+//$display("kkkkk");
+`uvm_info("ROUTER_rd_mon",$sformatf("printing from read monitor \n %s",xtn.sprint()),UVM_LOW)
+monitor_port.write(xtn);
+//xtn.print();
+endtask
+
